@@ -1,0 +1,58 @@
+{
+	"name": "DF_Silver_To_Gold",
+	"properties": {
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "DelimitedText2",
+						"type": "DatasetReference"
+					},
+					"name": "source1"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "DelimitedText3",
+						"type": "DatasetReference"
+					},
+					"name": "goldset"
+				}
+			],
+			"transformations": [
+				{
+					"name": "customersales"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          order_id as string,",
+				"          customer_id as string,",
+				"          customer_name as string,",
+				"          product as string,",
+				"          quantity as string,",
+				"          unit_price as string,",
+				"          order_date as string,",
+				"          total_amount as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false) ~> source1",
+				"source1 aggregate(groupBy(customer_id,",
+				"          customer_name),",
+				"     total_orders = count(order_id),",
+				"          total_quantity = sum(toInteger(quantity)),",
+				"          total_sales = sum(toInteger(total_amount))) ~> customersales",
+				"customersales sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     umask: 0022,",
+				"     preCommands: [],",
+				"     postCommands: [],",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> goldset"
+			]
+		}
+	}
+}

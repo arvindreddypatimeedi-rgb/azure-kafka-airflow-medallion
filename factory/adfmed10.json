@@ -1,0 +1,15 @@
+{
+	"name": "adfmed10",
+	"properties": {
+		"trustModeClaimForMi": {
+			"value": "Disabled",
+			"editable": true
+		}
+	},
+	"location": "eastus",
+	"identity": {
+		"type": "SystemAssigned",
+		"principalId": "23ea5c13-ad69-43c5-9662-30bf2665668b",
+		"tenantId": "4c328f05-94de-4e0c-94ef-3aba48c611d3"
+	}
+}

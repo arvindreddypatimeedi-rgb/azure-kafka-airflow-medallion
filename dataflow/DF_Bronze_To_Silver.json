@@ -38,7 +38,7 @@
 				"     allowSchemaDrift: true,",
 				"     validateSchema: false,",
 				"     ignoreNoFilesFound: false,",
-				"     wildcardPaths:['*/*/*/*/*/*/*.avro']) ~> source1",
+				"     wildcardPaths:['bronze/eventhub-capture/evhns-retail-med-dev/retail-orders/*/*/*/*/*/*/*.avro']) ~> source1",
 				"source1 derive(total_amount = toInteger(quantity) * toInteger(unit_price)) ~> derivedColumn1",
 				"derivedColumn1 sink(allowSchemaDrift: true,",
 				"     validateSchema: false,",

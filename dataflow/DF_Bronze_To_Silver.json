@@ -42,7 +42,7 @@
 				"     validateSchema: false,",
 				"     ignoreNoFilesFound: false,",
 				"     wildcardPaths:['bronze/eventhub-capture/evhns-retail-med-dev/retail-orders/*/*/*/*/*/*/*.avro']) ~> source1",
-				"parse1 derive() ~> derivedColumn1",
+				"parse1 derive(order_id = toInteger(parsed_body.order_id)) ~> derivedColumn1",
 				"source1 parse(parsed_body = Body ? (order_id as string,",
 				"          customer_id as string,",
 				"          customer_name as string,",

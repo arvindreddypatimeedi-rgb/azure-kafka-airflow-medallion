@@ -51,7 +51,7 @@
 				"          unit_price as string,",
 				"          order_date as string),",
 				"     format: 'json',",
-				"     documentForm: 'documentPerLine') ~> parse1",
+				"     documentForm: 'singleDocument') ~> parse1",
 				"derivedColumn1 sink(allowSchemaDrift: true,",
 				"     validateSchema: false,",
 				"     umask: 0022,",

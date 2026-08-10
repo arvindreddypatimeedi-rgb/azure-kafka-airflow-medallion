@@ -6,7 +6,7 @@
 			"sources": [
 				{
 					"dataset": {
-						"referenceName": "DelimitedText2",
+						"referenceName": "DelimitedText1",
 						"type": "DatasetReference"
 					},
 					"name": "source1"
@@ -28,14 +28,14 @@
 			],
 			"scriptLines": [
 				"source(output(",
-				"          order_id as string,",
+				"          quantity as short,",
+				"          unit_price as double,",
+				"          order_date as date,",
+				"          total_amount as double,",
+				"          order_id as short,",
 				"          customer_id as string,",
 				"          customer_name as string,",
-				"          product as string,",
-				"          quantity as string,",
-				"          unit_price as string,",
-				"          order_date as string,",
-				"          total_amount as string",
+				"          product as string",
 				"     ),",
 				"     allowSchemaDrift: true,",
 				"     validateSchema: false,",
@@ -47,6 +47,7 @@
 				"          total_sales = sum(toInteger(total_amount))) ~> customersales",
 				"customersales sink(allowSchemaDrift: true,",
 				"     validateSchema: false,",
+				"     truncate: true,",
 				"     umask: 0022,",
 				"     preCommands: [],",
 				"     postCommands: [],",

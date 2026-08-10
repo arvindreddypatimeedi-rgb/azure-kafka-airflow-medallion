@@ -40,13 +40,51 @@
 						"userProperties": [],
 						"typeProperties": {
 							"dataflow": {
+								"referenceName": "DF_Bronze_To_Silver",
+								"type": "DataFlowReference",
+								"parameters": {},
+								"datasetParameters": {
+									"source1": {},
+									"silver": {}
+								}
+							},
+							"staging": {},
+							"compute": {
+								"coreCount": 8,
+								"computeType": "General"
+							},
+							"traceLevel": "Fine"
+						}
+					},
+					{
+						"name": "Data flow2",
+						"type": "ExecuteDataFlow",
+						"dependsOn": [
+							{
+								"activity": "Data flow1",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"dataflow": {
 								"referenceName": "DF_Silver_To_Gold",
 								"type": "DataFlowReference",
 								"parameters": {},
 								"datasetParameters": {
 									"source1": {},
 									"goldset": {}
-								}
+								},
+								"linkedServiceParameters": {}
 							},
 							"staging": {},
 							"compute": {
@@ -64,7 +102,81 @@
 				"lastPublishTime": "2026-08-06T16:16:34Z"
 			},
 			"dependsOn": [
+				"[concat(variables('factoryId'), '/dataflows/DF_Bronze_To_Silver')]",
 				"[concat(variables('factoryId'), '/dataflows/DF_Silver_To_Gold')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/DS_Bronze_EventHub_Avro')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "AzureDataLakeStorage1",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "Avro",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobFSLocation",
+						"folderPath": "evhns-retail-med-dev/retail-orders",
+						"fileSystem": "medallion"
+					}
+				},
+				"schema": {
+					"type": "record",
+					"name": "Microsoft.ServiceBus.Messaging.EventData",
+					"fields": [
+						{
+							"name": "SequenceNumber",
+							"type": "long"
+						},
+						{
+							"name": "Offset",
+							"type": "string"
+						},
+						{
+							"name": "EnqueuedTimeUtc",
+							"type": "string"
+						},
+						{
+							"name": "SystemProperties",
+							"type": {
+								"type": "map",
+								"values": [
+									"long",
+									"double",
+									"string",
+									"bytes"
+								]
+							}
+						},
+						{
+							"name": "Properties",
+							"type": {
+								"type": "map",
+								"values": [
+									"long",
+									"double",
+									"string",
+									"bytes",
+									"null"
+								]
+							}
+						},
+						{
+							"name": "Body",
+							"type": [
+								"null",
+								"bytes"
+							]
+						}
+					]
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/AzureDataLakeStorage1')]"
 			]
 		},
 		{
@@ -269,7 +381,7 @@
 					"sources": [
 						{
 							"dataset": {
-								"referenceName": "DS_Bronze_Orders",
+								"referenceName": "DS_Bronze_EventHub_Avro",
 								"type": "DatasetReference"
 							},
 							"name": "source1"
@@ -287,34 +399,60 @@
 					"transformations": [
 						{
 							"name": "derivedColumn1"
+						},
+						{
+							"name": "parse1"
 						}
 					],
 					"scriptLines": [
 						"source(output(",
-						"          order_id as string,",
+						"          SequenceNumber as long,",
+						"          Offset as string,",
+						"          EnqueuedTimeUtc as string,",
+						"          SystemProperties as [string,string],",
+						"          Properties as [string,string],",
+						"          Body as string",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     ignoreNoFilesFound: false,",
+						"     wildcardPaths:['bronze/eventhub-capture/evhns-retail-med-dev/retail-orders/*/*/*/*/*/*/*.avro']) ~> source1",
+						"parse1 derive(quantity = toInteger(parsed_body.quantity),",
+						"          unit_price = toDecimal(parsed_body.unit_price,18,2),",
+						"          order_date = toDate(parsed_body.order_date),",
+						"          total_amount = toDecimal(parsed_body.quantity) * toDecimal(parsed_body.unit_price)) ~> derivedColumn1",
+						"source1 parse(parsed_body = Body ? (order_id as string,",
 						"          customer_id as string,",
 						"          customer_name as string,",
 						"          product as string,",
 						"          quantity as string,",
 						"          unit_price as string,",
-						"          order_date as string",
-						"     ),",
-						"     allowSchemaDrift: true,",
-						"     validateSchema: false,",
-						"     ignoreNoFilesFound: false) ~> source1",
-						"source1 derive(total_amount = toInteger(quantity) * toInteger(unit_price)) ~> derivedColumn1",
+						"          order_date as string),",
+						"     format: 'json',",
+						"     documentForm: 'singleDocument') ~> parse1",
 						"derivedColumn1 sink(allowSchemaDrift: true,",
 						"     validateSchema: false,",
+						"     truncate: true,",
 						"     umask: 0022,",
 						"     preCommands: [],",
 						"     postCommands: [],",
 						"     skipDuplicateMapInputs: true,",
-						"     skipDuplicateMapOutputs: true) ~> silver"
+						"     skipDuplicateMapOutputs: true,",
+						"     mapColumn(",
+						"          quantity,",
+						"          unit_price,",
+						"          order_date,",
+						"          total_amount,",
+						"          order_id = parsed_body.order_id,",
+						"          customer_id = parsed_body.customer_id,",
+						"          customer_name = parsed_body.customer_name,",
+						"          product = parsed_body.product",
+						"     )) ~> silver"
 					]
 				}
 			},
 			"dependsOn": [
-				"[concat(variables('factoryId'), '/datasets/DS_Bronze_Orders')]",
+				"[concat(variables('factoryId'), '/datasets/DS_Bronze_EventHub_Avro')]",
 				"[concat(variables('factoryId'), '/datasets/DelimitedText1')]"
 			]
 		},
@@ -328,7 +466,7 @@
 					"sources": [
 						{
 							"dataset": {
-								"referenceName": "DelimitedText2",
+								"referenceName": "DelimitedText1",
 								"type": "DatasetReference"
 							},
 							"name": "source1"
@@ -350,14 +488,14 @@
 					],
 					"scriptLines": [
 						"source(output(",
-						"          order_id as string,",
+						"          quantity as short,",
+						"          unit_price as double,",
+						"          order_date as date,",
+						"          total_amount as double,",
+						"          order_id as short,",
 						"          customer_id as string,",
 						"          customer_name as string,",
-						"          product as string,",
-						"          quantity as string,",
-						"          unit_price as string,",
-						"          order_date as string,",
-						"          total_amount as string",
+						"          product as string",
 						"     ),",
 						"     allowSchemaDrift: true,",
 						"     validateSchema: false,",
@@ -369,6 +507,7 @@
 						"          total_sales = sum(toInteger(total_amount))) ~> customersales",
 						"customersales sink(allowSchemaDrift: true,",
 						"     validateSchema: false,",
+						"     truncate: true,",
 						"     umask: 0022,",
 						"     preCommands: [],",
 						"     postCommands: [],",
@@ -378,7 +517,7 @@
 				}
 			},
 			"dependsOn": [
-				"[concat(variables('factoryId'), '/datasets/DelimitedText2')]",
+				"[concat(variables('factoryId'), '/datasets/DelimitedText1')]",
 				"[concat(variables('factoryId'), '/datasets/DelimitedText3')]"
 			]
 		}

@@ -16,7 +16,7 @@
 				"userProperties": [],
 				"typeProperties": {
 					"dataflow": {
-						"referenceName": "DF_Silver_To_Gold",
+						"referenceName": "DF_Bronze_To_Silver",
 						"type": "DataFlowReference"
 					},
 					"compute": {

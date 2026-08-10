@@ -61,7 +61,17 @@
 				"     preCommands: [],",
 				"     postCommands: [],",
 				"     skipDuplicateMapInputs: true,",
-				"     skipDuplicateMapOutputs: true) ~> silver"
+				"     skipDuplicateMapOutputs: true,",
+				"     mapColumn(",
+				"          quantity,",
+				"          unit_price,",
+				"          order_date,",
+				"          total_amount,",
+				"          order_id = parsed_body.order_id,",
+				"          customer_id = parsed_body.customer_id,",
+				"          customer_name = parsed_body.customer_name,",
+				"          product = parsed_body.product",
+				"     )) ~> silver"
 			]
 		}
 	}

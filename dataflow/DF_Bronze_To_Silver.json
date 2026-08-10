@@ -24,6 +24,9 @@
 			"transformations": [
 				{
 					"name": "derivedColumn1"
+				},
+				{
+					"name": "parse1"
 				}
 			],
 			"scriptLines": [
@@ -39,7 +42,16 @@
 				"     validateSchema: false,",
 				"     ignoreNoFilesFound: false,",
 				"     wildcardPaths:['bronze/eventhub-capture/evhns-retail-med-dev/retail-orders/*/*/*/*/*/*/*.avro']) ~> source1",
-				"source1 derive(total_amount = toInteger(quantity) * toInteger(unit_price)) ~> derivedColumn1",
+				"parse1 derive() ~> derivedColumn1",
+				"source1 parse(parsed_body = Body ? (order_id as string,",
+				"          customer_id as string,",
+				"          customer_name as string,",
+				"          product as string,",
+				"          quantity as string,",
+				"          unit_price as string,",
+				"          order_date as string),",
+				"     format: 'json',",
+				"     documentForm: 'documentPerLine') ~> parse1",
 				"derivedColumn1 sink(allowSchemaDrift: true,",
 				"     validateSchema: false,",
 				"     umask: 0022,",

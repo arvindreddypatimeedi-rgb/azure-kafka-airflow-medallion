@@ -10,7 +10,7 @@
 		"typeProperties": {
 			"location": {
 				"type": "AzureBlobFSLocation",
-				"folderPath": "bronze/eventhub-capture/evhns-retail-med-dev",
+				"folderPath": "evhns-retail-med-dev/retail-orders",
 				"fileSystem": "medallion"
 			}
 		},

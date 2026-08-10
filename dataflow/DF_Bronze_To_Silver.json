@@ -6,7 +6,7 @@
 			"sources": [
 				{
 					"dataset": {
-						"referenceName": "DS_Bronze_Orders",
+						"referenceName": "DS_Bronze_EventHub_Avro",
 						"type": "DatasetReference"
 					},
 					"name": "source1"
@@ -28,17 +28,17 @@
 			],
 			"scriptLines": [
 				"source(output(",
-				"          order_id as string,",
-				"          customer_id as string,",
-				"          customer_name as string,",
-				"          product as string,",
-				"          quantity as string,",
-				"          unit_price as string,",
-				"          order_date as string",
+				"          SequenceNumber as long,",
+				"          Offset as string,",
+				"          EnqueuedTimeUtc as string,",
+				"          SystemProperties as [string,string],",
+				"          Properties as [string,string],",
+				"          Body as string",
 				"     ),",
 				"     allowSchemaDrift: true,",
 				"     validateSchema: false,",
-				"     ignoreNoFilesFound: false) ~> source1",
+				"     ignoreNoFilesFound: false,",
+				"     wildcardPaths:['1/2026/08/10/08/29/']) ~> source1",
 				"source1 derive(total_amount = toInteger(quantity) * toInteger(unit_price)) ~> derivedColumn1",
 				"derivedColumn1 sink(allowSchemaDrift: true,",
 				"     validateSchema: false,",
